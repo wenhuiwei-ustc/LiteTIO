@@ -1,0 +1,110 @@
+import numpy as np
+from path import Path
+from imageio import imread
+from tqdm import tqdm
+
+
+class test_framework_VIVID(object):
+    def __init__(self, root, sequence_set, seq_length=3, step=1):
+        self.root = root
+        self.img_files, self.poses, self.sample_indices, self.imus = read_scene_data(self.root, sequence_set, seq_length, step)
+
+    def generator(self):
+        for img_list, pose_list, sample_list, imu_list in zip(self.img_files, self.poses, self.sample_indices, self.imus):
+            for snippet_indices in sample_list:
+                imgs = [np.expand_dims(imread(img_list[i]).astype(np.float32), axis=2) for i in snippet_indices]
+                imus = [imu_list[i] for i in snippet_indices]
+                # imus = [np.genfromtxt(imu_list[i]).astype(np.float32)[:6] for i in snippet_indices]
+                poses = np.stack([pose_list[i] for i in snippet_indices])
+                first_pose = poses[0]
+                poses[:,:,-1] -= first_pose[:,-1]
+                compensated_poses = np.linalg.inv(first_pose[:,:3]) @ poses
+
+                yield {'imgs': imgs,
+                       'imus': imus,
+                       'path': img_list[0],
+                       'poses': compensated_poses
+                       }
+
+    def __iter__(self):
+        return self.generator()
+
+    def __len__(self):
+        return sum(len(imgs) for imgs in self.img_files)
+
+class test_framework_drone(object):
+    def __init__(self, root, sequence_set, seq_length=3, step=1):
+        self.root = root
+        self.img_files, self.sample_indices, self.imus = read_drone_data(self.root, sequence_set, seq_length, step)
+
+    def generator(self):
+        for img_list, sample_list, imu_list in zip(self.img_files, self.sample_indices, self.imus):
+            for snippet_indices in sample_list:
+                imgs = [np.expand_dims(imread(img_list[i]).astype(np.float32), axis=2) for i in snippet_indices]
+                imus = [imu_list[i] for i in snippet_indices]
+                # imus = [np.genfromtxt(imu_list[i]).astype(np.float32)[:6] for i in snippet_indices]
+
+                yield {'imgs': imgs,
+                       'imus': imus,
+                       'path': img_list[0]
+                       }
+
+    def __iter__(self):
+        return self.generator()
+
+    def __len__(self):
+        return sum(len(imgs) for imgs in self.img_files)
+
+
+def read_scene_data(data_root, sequence_set, seq_length=3, step=1):
+    data_root = Path(data_root)
+    im_sequences = []
+    imu_sequences = []
+    poses_sequences = []
+    indices_sequences = []
+    demi_length = (seq_length - 1) // 2
+    shift_range = np.array([step*i for i in range(-demi_length, demi_length + 1)]).reshape(1, -1)
+
+    sequences = []
+    for seq in sequence_set:
+        sequences.append((data_root/seq))
+
+    print('getting test metadata for theses sequences : {}'.format(sequences))
+    for sequence in tqdm(sequences):
+        imgs = sorted((sequence/'Thermal').files('*.png'))
+        imus = sorted((sequence / "IMU/data").files('*.txt'))
+        poses = np.genfromtxt(sequence/'poses_T.txt').astype(np.float64).reshape(-1, 3, 4)
+   
+        # construct 5-snippet sequences
+        tgt_indices = np.arange(demi_length, len(imgs) - demi_length).reshape(-1, 1)
+        snippet_indices = shift_range + tgt_indices
+        im_sequences.append(imgs)
+        imu_sequences.append(imus)
+        poses_sequences.append(poses)
+        indices_sequences.append(snippet_indices)
+    return im_sequences, poses_sequences, indices_sequences, imu_sequences
+
+def read_drone_data(data_root, sequence_set, seq_length=3, step=1):
+    data_root = Path(data_root)
+    im_sequences = []
+    imu_sequences = []
+    indices_sequences = []
+    demi_length = (seq_length - 1) // 2
+    shift_range = np.array([step*i for i in range(-demi_length, demi_length + 1)]).reshape(1, -1)
+
+    sequences = []
+    for seq in sequence_set:
+        sequences.append((data_root/seq))
+
+    print('getting test metadata for theses sequences : {}'.format(sequences))
+    for sequence in tqdm(sequences):
+        imgs = sorted((sequence/'Thermal').files('*.png'))
+        imus = sorted((sequence / "IMU/data").files('*.txt'))
+   
+        # construct 5-snippet sequences
+        tgt_indices = np.arange(demi_length, len(imgs) - demi_length).reshape(-1, 1)
+        snippet_indices = shift_range + tgt_indices
+        im_sequences.append(imgs)
+        imu_sequences.append(imus)
+        indices_sequences.append(snippet_indices)
+    return im_sequences, indices_sequences, imu_sequences
