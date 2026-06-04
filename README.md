@@ -12,19 +12,23 @@ LiteTIO is a lightweight thermal-inertial odometry framework for robust camera p
 ## Demo
 
 <p align="center">
-  <video src="media/video_pred_xyz2_static_gt.mp4" controls width="720"></video>
+  <a href="media/video_pred_xyz2_static_gt.mp4">
+    <img src="media/video_pred_xyz2_static_gt.gif" width="720" alt="Pose prediction demo" />
+  </a>
 </p>
 
 <p align="center">
-  <a href="media/video_pred_xyz2_static_gt.mp4">View pose prediction demo video</a>
+  Pose prediction demo
 </p>
 
 <p align="center">
-  <video src="media/video_traj_as_ours.mp4" controls width="720"></video>
+  <a href="media/video_traj_as_ours.mp4">
+    <img src="media/video_traj_as_ours.gif" width="720" alt="Trajectory demo" />
+  </a>
 </p>
 
 <p align="center">
-  <a href="media/video_traj_as_ours.mp4">View trajectory demo video</a>
+  Trajectory demo
 </p>
 
 ## Architecture
