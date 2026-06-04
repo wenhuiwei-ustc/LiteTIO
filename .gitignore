@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+*.egg-info/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Training outputs
+checkpoints/
+runs/
+outputs/
+logs/
+*.pth
+*.pth.tar
+*.pt
+*.ckpt
+
+# Datasets and generated data
+common/data_prepare/dump/
+data/
+datasets/
+
+# Large intermediate arrays
+*.npy
+*.npz
